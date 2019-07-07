@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -15,13 +16,19 @@ namespace WinShift {
         }
 
         enum Direction {
-            Top, Down, None
+            Top, Down,
+            FirstThird, SecondThird, ThirdThird
         }
 
         public GlobalHotkeys() {
+            // TODO refactor
             int modifier = (int)KeyModifier.WinKey + (int)KeyModifier.Alt;
             RegisterHotKey(this.Handle, 0, modifier, Keys.Up.GetHashCode());
             RegisterHotKey(this.Handle, 1, modifier, Keys.Down.GetHashCode());
+            int extModifier = (int)KeyModifier.WinKey + (int)KeyModifier.Alt + (int)KeyModifier.Control;
+            RegisterHotKey(this.Handle, 2, extModifier, Keys.D8.GetHashCode());
+            RegisterHotKey(this.Handle, 3, extModifier, Keys.D9.GetHashCode());
+            RegisterHotKey(this.Handle, 4, extModifier, Keys.D0.GetHashCode());
         }
         
         private void MoveWindow(Direction direction) {
@@ -34,15 +41,20 @@ namespace WinShift {
             int width = second.WorkingArea.Width;
             int height = second.WorkingArea.Height / 2;
 
+            // TODO refactor
             if (direction == Direction.Down) {
                 y += height;
+            } else if (direction == Direction.FirstThird) {
+                height = (height * 2) / 3;
+            } else if (direction == Direction.SecondThird) {
+                height = (height * 2) / 3;
+                y += height;
+            } else if (direction == Direction.ThirdThird) {
+                height = (height * 2) / 3;
+                y += height * 2;
             }
-
-            Console.WriteLine("x: " + x);
-            Console.WriteLine("y: " + y);
-            Console.WriteLine("width: " + width);
-            Console.WriteLine("height: " + height);
-
+            
+            // win10 seems to have invisible margin/border around windows
             MoveWindow(handle, x, y, width, height, true);
         }
 
@@ -52,25 +64,25 @@ namespace WinShift {
                 Keys key = (Keys)(((int)m.LParam >> 16) & 0xFFFF);
                 KeyModifier modifier = (KeyModifier)((int)m.LParam & 0xFFFF);
                 int id = m.WParam.ToInt32();
-
-                var direction = Direction.None;
-                switch (id) {
-                    case 0:
-                        direction = Direction.Top;
-                        break;
-                    case 1:
-                        direction = Direction.Down;
-                        break;
-                    default:
-                        return;
-                }
-                MoveWindow(direction);
+                
+                var idToDirection = new SortedDictionary<int, Direction>();
+                idToDirection.Add(0, Direction.Top);
+                idToDirection.Add(1, Direction.Down);
+                idToDirection.Add(2, Direction.FirstThird);
+                idToDirection.Add(3, Direction.SecondThird);
+                idToDirection.Add(4, Direction.ThirdThird);
+                
+                MoveWindow(idToDirection[id]);
             }
         }
 
         ~GlobalHotkeys() {
+            // TODO refactor
             UnregisterHotKey(this.Handle, 0);
             UnregisterHotKey(this.Handle, 1);
+            UnregisterHotKey(this.Handle, 2);
+            UnregisterHotKey(this.Handle, 3);
+            UnregisterHotKey(this.Handle, 4);
         }
 
         [DllImport("user32.dll")]
