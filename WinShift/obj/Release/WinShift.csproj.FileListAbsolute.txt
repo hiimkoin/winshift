@@ -1,0 +1,10 @@
+C:\Users\koin\source\repos\WinShift\WinShift\bin\Release\WinShift.exe.config
+C:\Users\koin\source\repos\WinShift\WinShift\bin\Release\WinShift.exe
+C:\Users\koin\source\repos\WinShift\WinShift\bin\Release\WinShift.pdb
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.Form1.resources
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.Properties.Resources.resources
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.csproj.GenerateResource.cache
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.csproj.CoreCompileInputs.cache
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.exe
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.pdb
+C:\Users\koin\source\repos\WinShift\WinShift\obj\Release\WinShift.csprojAssemblyReference.cache
