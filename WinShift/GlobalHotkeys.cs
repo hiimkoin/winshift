@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.InteropServices;
@@ -15,23 +16,32 @@ namespace WinShift {
             WinKey = 8
         }
 
-        enum Direction {
-            Top, Down,
+        enum Location {
+            Top, Down, Center, 
             FirstThird, SecondThird, ThirdThird
         }
 
+        ArrayList registered = new ArrayList();
+        SortedDictionary<Keys, Location> keyToLocation = new SortedDictionary<Keys, Location>();
+        
         public GlobalHotkeys() {
-            // TODO refactor
-            int modifier = (int)KeyModifier.WinKey + (int)KeyModifier.Alt;
-            RegisterHotKey(this.Handle, 0, modifier, Keys.Up.GetHashCode());
-            RegisterHotKey(this.Handle, 1, modifier, Keys.Down.GetHashCode());
-            int extModifier = (int)KeyModifier.WinKey + (int)KeyModifier.Alt + (int)KeyModifier.Control;
-            RegisterHotKey(this.Handle, 2, extModifier, Keys.D8.GetHashCode());
-            RegisterHotKey(this.Handle, 3, extModifier, Keys.D9.GetHashCode());
-            RegisterHotKey(this.Handle, 4, extModifier, Keys.D0.GetHashCode());
+            Register(Keys.Up, Location.Top);
+            Register(Keys.Down, Location.Down);
+            Register(Keys.D8, Location.FirstThird);
+            Register(Keys.D9, Location.SecondThird);
+            Register(Keys.D0, Location.ThirdThird);
+            Register(Keys.M, Location.Center);
         }
         
-        private void MoveWindow(Direction direction) {
+        private void Register(Keys key, Location direction) {
+            int modifier = (int)KeyModifier.WinKey + (int)KeyModifier.Alt + (int)KeyModifier.Control;
+            int freeId = registered.Count;
+            RegisterHotKey(this.Handle, freeId, modifier, key.GetHashCode());
+            registered.Add(freeId);
+            keyToLocation.Add(key, direction);
+        }
+
+        private void MoveWindow(Location location) {
             // TODO shouldnt be hardcoded
             Screen second = Screen.AllScreens[1];
             IntPtr handle = GetForegroundWindow();
@@ -42,16 +52,19 @@ namespace WinShift {
             int height = second.WorkingArea.Height / 2;
 
             // TODO refactor
-            if (direction == Direction.Down) {
+            if (location == Location.Down) {
                 y += height;
-            } else if (direction == Direction.FirstThird) {
-                height = (height * 2) / 3;
-            } else if (direction == Direction.SecondThird) {
-                height = (height * 2) / 3;
-                y += height;
-            } else if (direction == Direction.ThirdThird) {
-                height = (height * 2) / 3;
-                y += height * 2;
+            } else if (location == Location.Center) {
+                // Doesnt really Center it sets position same height as my left landscape display
+                y = 0;
+                height = 1080;
+            } else if (location != Location.Top) {
+                height = (height * 2) / 3; // First Third
+                if (location == Location.SecondThird) {
+                    y += height;
+                } else if (location == Location.ThirdThird) { 
+                    y += height * 2;
+                }
             }
             
             // win10 seems to have invisible margin/border around windows
@@ -65,26 +78,17 @@ namespace WinShift {
                 KeyModifier modifier = (KeyModifier)((int)m.LParam & 0xFFFF);
                 int id = m.WParam.ToInt32();
                 
-                var idToDirection = new SortedDictionary<int, Direction>();
-                idToDirection.Add(0, Direction.Top);
-                idToDirection.Add(1, Direction.Down);
-                idToDirection.Add(2, Direction.FirstThird);
-                idToDirection.Add(3, Direction.SecondThird);
-                idToDirection.Add(4, Direction.ThirdThird);
-                
-                MoveWindow(idToDirection[id]);
+                MoveWindow(keyToLocation[key]);
             }
         }
 
         ~GlobalHotkeys() {
-            // TODO refactor
-            UnregisterHotKey(this.Handle, 0);
-            UnregisterHotKey(this.Handle, 1);
-            UnregisterHotKey(this.Handle, 2);
-            UnregisterHotKey(this.Handle, 3);
-            UnregisterHotKey(this.Handle, 4);
+            foreach(int id in registered) {
+                UnregisterHotKey(this.Handle, id);
+            }
         }
 
+        #region winapi
         [DllImport("user32.dll")]
         static extern bool RegisterHotKey(
             IntPtr hWnd,
@@ -120,5 +124,6 @@ namespace WinShift {
             int dwAttribute,
             out Rectangle pvAttribute,
             int cbAttribute);
+        #endregion
     }
 }
