@@ -19,7 +19,8 @@ namespace WinShift {
         enum Location {
             Top, Down, Center, 
             FirstThird, SecondThird, ThirdThird,
-            FirstQuater, SecondQuarter, ThirdQuarter, FourthQuarter
+            FirstQuater, SecondQuarter, ThirdQuarter, FourthQuarter,
+            FirstSecondThird, SecondSecondThird,
         }
 
         ArrayList registered = new ArrayList();
@@ -39,6 +40,9 @@ namespace WinShift {
             Register(Keys.D2, Location.SecondQuarter);
             Register(Keys.D3, Location.ThirdQuarter);
             Register(Keys.D4, Location.FourthQuarter);
+
+            Register(Keys.OemOpenBrackets, Location.FirstSecondThird);
+            Register(Keys.OemCloseBrackets, Location.SecondSecondThird);
         }
         
         private void Register(Keys key, Location location) {
@@ -53,7 +57,10 @@ namespace WinShift {
             // TODO shouldnt be hardcoded
             Screen second = Screen.AllScreens[1];
             IntPtr handle = GetForegroundWindow();
-            
+
+            // restore original size if window is max or minimized
+            ShowWindow(handle, CmdShow.SW_RESTORE);
+
             int x = second.WorkingArea.X;
             int y = second.WorkingArea.Y;
             int width = second.WorkingArea.Width;
@@ -98,6 +105,13 @@ namespace WinShift {
                 case Location.FourthQuarter:
                     height /= 4;
                     y += height * 3;
+                    break;
+                case Location.FirstSecondThird:
+                    height /= 3;
+                    break;
+                case Location.SecondSecondThird:
+                    y += height / 3;
+                    height = (height * 2) / 3;
                     break;
             }
             
@@ -213,6 +227,27 @@ namespace WinShift {
             DWMWA_CLOAKED,
             DWMWA_FREEZE_REPRESENTATION,
             DWMWA_LAST
+        }
+
+        [DllImport("user32.dll")]
+        static extern bool ShowWindow(
+            IntPtr hWnd,
+            CmdShow nCmdShow);
+
+        [Flags]
+        public enum CmdShow : int {
+            SW_HIDE,
+            SW_SHOWNORMAL,
+            SW_SHOWMINIMIZED,
+            SW_SHOWMAXIMIZED,
+            SW_SHOWNOACTIVATE,
+            SW_SHOW,
+            SW_MINIMIZE,
+            SW_SHOWMINNOACTIVE,
+            SW_SHOWNA,
+            SW_RESTORE,
+            SW_SHOWDEFAULT,
+            SW_FORCEMINIMIZE
         }
         #endregion
     }
