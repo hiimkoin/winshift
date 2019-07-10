@@ -15,37 +15,25 @@ namespace WinShift {
             Shift = 4,
             WinKey = 8
         }
-
-        enum Location {
-            Top, Down, Center, 
-            FirstThird, SecondThird, ThirdThird,
-            FirstQuater, SecondQuarter, ThirdQuarter, FourthQuarter,
-            FirstSecondThird, SecondSecondThird,
-        }
-
+        
         ArrayList registered = new ArrayList();
-        SortedDictionary<Keys, Location> keyToLocation = new SortedDictionary<Keys, Location>();
+        SortedDictionary<Keys, Coords> keyToLocation = new SortedDictionary<Keys, Coords>();
 
         public GlobalHotkeys() {
-            Register(Keys.Up, Location.Top);
-            Register(Keys.Down, Location.Down);
+            Register(Keys.Up, new TopCoords());
+            Register(Keys.Down, new DownCoords());
 
-            Register(Keys.D8, Location.FirstThird);
-            Register(Keys.D9, Location.SecondThird);
-            Register(Keys.D0, Location.ThirdThird);
+            Register(Keys.D8, new FirstThird());
+            Register(Keys.D9, new SecondThird());
+            Register(Keys.D0, new ThirdThird());
 
-            Register(Keys.M, Location.Center);
-
-            Register(Keys.D1, Location.FirstQuater);
-            Register(Keys.D2, Location.SecondQuarter);
-            Register(Keys.D3, Location.ThirdQuarter);
-            Register(Keys.D4, Location.FourthQuarter);
-
-            Register(Keys.OemOpenBrackets, Location.FirstSecondThird);
-            Register(Keys.OemCloseBrackets, Location.SecondSecondThird);
+            Register(Keys.M, new CenterCoords());
+            
+            Register(Keys.OemOpenBrackets, new FirstSecondThird());
+            Register(Keys.OemCloseBrackets, new SecondSecondThird());
         }
         
-        private void Register(Keys key, Location location) {
+        private void Register(Keys key, Coords location) {
             int modifier = (int)KeyModifier.WinKey + (int)KeyModifier.Alt + (int)KeyModifier.Control;
             int freeId = registered.Count;
             RegisterHotKey(this.Handle, freeId, modifier, key.GetHashCode());
@@ -53,77 +41,23 @@ namespace WinShift {
             keyToLocation.Add(key, location);
         }
         
-        private void MoveWindow(Location location) {
-            // TODO shouldnt be hardcoded
-            Screen second = Screen.AllScreens[1];
+        private void MoveWindow(Coords location) {
             IntPtr handle = GetForegroundWindow();
-
             // restore original size if window is max or minimized
             ShowWindow(handle, CmdShow.SW_RESTORE);
 
-            int x = second.WorkingArea.X;
-            int y = second.WorkingArea.Y;
-            int width = second.WorkingArea.Width;
-            int height = second.WorkingArea.Height;
-            
-            // TODO refactor
-            switch (location) {
-                case Location.Top:
-                    height /= 2;
-                    break;
-                case Location.Down:
-                    height /= 2;
-                    y += height;
-                    break;
-                case Location.Center:
-                    // Doesnt really Center it sets position same height as my left landscape display
-                    y = 0;
-                    height = 1080;
-                    break;
-                case Location.FirstThird:
-                    height /= 3;
-                    break;
-                case Location.SecondThird:
-                    height /= 3;
-                    y += height;
-                    break;
-                case Location.ThirdThird:
-                    height /= 3;
-                    y += height * 2;
-                    break;
-                case Location.FirstQuater:
-                    height /= 4;
-                    break;
-                case Location.SecondQuarter:
-                    height /= 4;
-                    y += height;
-                    break;
-                case Location.ThirdQuarter:
-                    height /= 4;
-                    y += height * 2;
-                    break;
-                case Location.FourthQuarter:
-                    height /= 4;
-                    y += height * 3;
-                    break;
-                case Location.FirstSecondThird:
-                    height /= 3;
-                    break;
-                case Location.SecondSecondThird:
-                    y += height / 3;
-                    height = (height * 2) / 3;
-                    break;
-            }
-            
-            // win10 seems to have invisible margin/border around windows
-            RECT border = calculateBorders(handle);
+            Rectangle pos = location.coords();
+            // remove windows hidden borders
+            substract(ref pos, calculateBorders(handle));
+           
+            MoveWindow(handle, pos.X, pos.Y, pos.Width, pos.Height, true);
+        }
 
-            x -= border.Left;
-            y -= border.Top;
-            width += border.Left + border.Right;
-            height += border.Top + border.Bottom;
-            
-            MoveWindow(handle, x, y, width, height, true);
+        private void substract(ref Rectangle location, RECT border) {
+            location.X -= border.Left;
+            location.Y -= border.Top;
+            location.Width += border.Left + border.Right;
+            location.Height += border.Top + border.Bottom;
         }
 
         private RECT calculateBorders(IntPtr handle) {
